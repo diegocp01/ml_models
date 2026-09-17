@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAPD Crime ML Study — Explained</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574f;
+      --card: #ffffff;
+      --accent: #0b5fff;
+      --border: #e4ddd2;
+      --good: #0f7b4a;
+      --warn: #9a5b00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+    h1 { font-size: 1.85rem; line-height: 1.2; margin: 0 0 0.4rem; }
+    h2 { font-size: 1.25rem; margin: 2rem 0 0.75rem; }
+    p, li { color: var(--ink); }
+    .lede { font-size: 1.08rem; color: var(--muted); margin: 0 0 1.5rem; }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      margin: 0 0 1.75rem;
+    }
+    .pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.2rem;
+      margin: 0.85rem 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+    .stat strong { display: block; font-size: 1.35rem; color: var(--accent); }
+    .stat span { font-size: 0.9rem; color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .good { color: var(--good); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      border-left: 3px solid var(--border);
+      padding-left: 0.75rem;
+      margin: 1rem 0;
+    }
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+    code { font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>What this LAPD crime study actually did</h1>
+    <p class="lede">
+      A plain-language walkthrough of Diego Cabezas’s thesis notebook:
+      predicting whether an LA crime record looks <strong>violent</strong> or
+      <strong>non-violent</strong>, using public LAPD data from 2020 through mid-2024.
+    </p>
+    <div class="meta">
+      <span class="pill">Data window: 01/01/2020 – 08/01/2024</span>
+      <span class="pill">Source: LAPD Crime Data from 2020 to Present</span>
+      <span class="pill">Author: Diego Cabezas</span>
+    </div>
+
+    <div class="card grid">
+      <div class="stat"><strong>963,006</strong><span>crime rows fetched in the notebook run</span></div>
+      <div class="stat"><strong>~28</strong><span>raw variables in the public dataset</span></div>
+      <div class="stat"><strong>87.67%</strong><span>best classical accuracy (Random Forest)</span></div>
+      <div class="stat"><strong>87.39%</strong><span>neural-net validation accuracy</span></div>
+    </div>
+
+    <h2>The question in one sentence</h2>
+    <div class="card">
+      <p style="margin:0">
+        Given basics like <em>where</em>, <em>when</em>, victim traits, and weapon description,
+        can a model guess if the incident is a <strong>violent</strong> crime (1) or
+        <strong>non-violent</strong> crime (0)?
+      </p>
+    </div>
+
+    <h2>What data was used</h2>
+    <ul>
+      <li>Public LAPD / Data.gov “Crime Data from 2020 to Present” (updated daily).</li>
+      <li>Notebook pull captured <strong>963,006</strong> rows (output from the data-load cell).</li>
+      <li>Year counts in that run: 2020 <strong>199,744</strong>; 2021 <strong>209,755</strong>; 2022 <strong>235,059</strong>; 2023 <strong>231,914</strong>; 2024 <strong>86,534</strong> (partial year through August).</li>
+      <li>Average crimes per full-year slice in that output: <strong>192,601.20</strong>.</li>
+    </ul>
+    <p class="note">
+      Sources in notebook: title/date markdown; “almost 1 million observations and 28 variables”;
+      fetch output <code>Total rows fetched: 963006</code>; yearly value_counts output.
+    </p>
+
+    <h2>What the model looked at (features)</h2>
+    <div class="card">
+      <p>For the supervised task, features were:</p>
+      <ul>
+        <li>Area name (encoded)</li>
+        <li>Victim age, sex, descent (encoded)</li>
+        <li>Weapon description (encoded)</li>
+        <li>Year, month, day, hour</li>
+      </ul>
+      <p style="margin-bottom:0">
+        Target: <code>violent_crime</code> — 1 = violent, 0 = non-violent.
+      </p>
+    </div>
+
+    <h2>Things the notebook noticed before modeling</h2>
+    <ul>
+      <li><strong>Timing:</strong> average occurrence time ≈ <strong>1:38 PM</strong> (mean time code 1338.5); crimes spread across the day (25% by ~9:00 AM, 50% by ~2:20 PM, 75% by ~7:00 PM).</li>
+      <li><strong>Places:</strong> “77th” and “Central” areas stand out with notably high crime counts in the charts/discussion.</li>
+      <li><strong>Association check:</strong> among tested categoricals, <strong>premise description</strong> had the strongest chi-squared association with crime type.</li>
+      <li><strong>Class imbalance:</strong> far more non-violent than violent cases — that shows up in the model scores below.</li>
+    </ul>
+
+    <h2>Real model results (from the notebook)</h2>
+    <p>These numbers are taken from the notebook’s written result cells / training output — not invented.</p>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Overall accuracy</th>
+            <th>Non-violent (class 0)</th>
+            <th>Violent (class 1)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Logistic Regression<br><span style="color:var(--muted);font-size:0.85rem">max_iter 500 or 1000 (same)</span></td>
+            <td><strong>81.99%</strong> (~82%)</td>
+            <td>precision 0.84 · recall 0.96 · F1 0.90</td>
+            <td class="warn">precision 0.57 · recall 0.20 · F1 0.30</td>
+          </tr>
+          <tr>
+            <td>Random Forest<br><span style="color:var(--muted);font-size:0.85rem">n_estimators = 100</span></td>
+            <td class="good"><strong>87.67%</strong></td>
+            <td>precision 0.94 · recall 0.91 · F1 0.92</td>
+            <td>precision 0.65 · recall 0.75 · F1 0.70</td>
+          </tr>
+          <tr>
+            <td>Random Forest<br><span style="color:var(--muted);font-size:0.85rem">n_estimators = 50</span></td>
+            <td><strong>87.59%</strong></td>
+            <td>precision 0.94 · recall 0.91</td>
+            <td>precision 0.65 · recall 0.73 · F1 0.69</td>
+          </tr>
+          <tr>
+            <td>Deep learning (Keras)<br><span style="color:var(--muted);font-size:0.85rem">validation evaluate output</span></td>
+            <td><strong>87.39%</strong> (0.8739)</td>
+            <td colspan="2">Notebook prints validation accuracy only for this model (no class-wise table in the saved markdown).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>What that means in plain English</h2>
+    <ul>
+      <li><strong>Random Forest won among the classical models</strong> the notebook compared — higher overall accuracy and much better at catching violent cases than logistic regression.</li>
+      <li><strong>Logistic regression is okay at “non-violent”</strong> but misses most violent cases (recall only 0.20).</li>
+      <li><strong>Imbalance matters:</strong> a high overall accuracy can still hide weak violent-crime detection if most rows are non-violent.</li>
+      <li>A small neural net reached <strong>~87.4% validation accuracy</strong>, in the same ballpark as Random Forest’s overall score.</li>
+    </ul>
+
+    <h2>Also in the notebook (supporting work)</h2>
+    <ul>
+      <li>Cleaning / missing-value strategy (drop near-empty extra crime-code columns; impute or mark unknowns for weapon/sex/descent where needed).</li>
+      <li>Unsupervised exploration on 2024-only rows (dimensionality reduction + clustering) for compute-limited exploration.</li>
+      <li>A small interactive “prediction playground” for encoded feature inputs (example: Wilshire / age 30 / male / etc.).</li>
+    </ul>
+
+    <h2>Honest limits</h2>
+    <ul>
+      <li>This predicts a <em>label on recorded incidents</em>, not a crystal ball for future street events.</li>
+      <li>2024 counts are lower because the data window stops in August.</li>
+      <li>Violent-class performance is the hard part; overall accuracy alone is not enough.</li>
+      <li>Deep-learning class-wise precision/recall are not written up in the notebook the way Random Forest / Logistic are — so they are not claimed here.</li>
+    </ul>
+
+    <footer>
+      Built for non-Python readers from
+      <code>LAPD_Crime_ML_Models.ipynb</code> in
+      <a href="https://github.com/diegocp01/ml_models">diegocp01/ml_models</a>.
+      Every metric above is traceable to notebook markdown or cell outputs.
+      Open the notebook / Colab for full code, charts, and the prediction widgets.
+    </footer>
+  </main>
+</body>
+</html>
